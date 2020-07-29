@@ -59,7 +59,7 @@ inline Key held_key() {
 }
 
 inline void send_key(Key key) {
-  if (key == K_VOL_DOWN){ _key_definition(0xb915);; }
+  if (key == K_VOL_DOWN){ _key_definition(0xb915); }
 }
 
 void loop() {
