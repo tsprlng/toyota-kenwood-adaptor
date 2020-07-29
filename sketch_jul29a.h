@@ -69,9 +69,13 @@ void loop() {
     //sleep();  // TODO: not a thing in arduino world apparently?
     return;
   }
-  
+
   noInterrupts();
   digitalWrite(LED_BUILTIN, HIGH);
+  on();
+  _delay_us(9000);
+  off();
+  _delay_us(4500);
   send_key(key);
   while (held_key() == key) {
     repeat();
