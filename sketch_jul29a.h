@@ -2,6 +2,7 @@
 #define ZERO_TIME 1120
 #define REPEAT_TIME 110000
 #define INPUT_1 7
+#define INPUT_A A2
 #define OUTPUT_1 2
 
 // fake no-op definition to satisfy arduino IDE, that will be replaced by external macro:
@@ -10,6 +11,10 @@
 typedef enum {
   K_NONE,
   K_VOL_DOWN,
+  K_VOL_UP,
+  K_BACK,
+  K_FORWARD,
+  K_MODE,
   N_KEYS
 } Key;
 
@@ -48,19 +53,28 @@ void setup() {
   pinMode(OUTPUT_1, OUTPUT); digitalWrite(OUTPUT_1, LOW);
   pinMode(OUTPUT_1, INPUT);
   pinMode(INPUT_1, INPUT_PULLUP);
+  pinMode(INPUT_A, INPUT_PULLUP);
+  analogReference(INTERNAL);  // 2.56v
   attachInterrupt(digitalPinToInterrupt(INPUT_1), _handler_dfa, CHANGE);
 }
 
 inline Key held_key() {
   Key found = K_NONE;
-  if (digitalRead(INPUT_1) == LOW){
-    found = found ? N_KEYS : K_VOL_DOWN;
-  }
+  int analog = analogRead(INPUT_A);
+  if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
+  if (analog > 115 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
+  if (analog > 35 && analog < 105){ found = found ? N_KEYS : K_VOL_UP; }
+  if (analog > 10 && analog < 35){ found = found ? N_KEYS : K_BACK; }
+  if (analog < 10){ found = found ? N_KEYS : K_FORWARD; }
   return found >= N_KEYS ? K_NONE : found;
 }
 
 inline void send_key(Key key) {
+  if (key == K_MODE){ _key_definition(0xb916); }  // just mute, for now: TODO detect holds/double taps?
   if (key == K_VOL_DOWN){ _key_definition(0xb915); }
+  if (key == K_VOL_UP){ _key_definition(0xb914); }
+  if (key == K_BACK){ _key_definition(0xb90a); }
+  if (key == K_FORWARD){ _key_definition(0xb90b); }
 }
 
 void loop() {
