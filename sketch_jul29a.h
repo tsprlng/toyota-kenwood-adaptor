@@ -67,10 +67,13 @@ inline Key held_key() {
   if (analog > 40 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 10 && analog < 35){ found = found ? N_KEYS : K_BACK; }
   return found >= N_KEYS ? K_NONE : found;
+    // multiple key presses => something is wrong, so do nothing
 }
 
 inline void send_key(Key key) {
   if (key == K_MODE){ _key_definition(0xb916); }  // just mute, for now: TODO detect holds/double taps?
+    // play/pause is 0xb90e
+    // source switch is 0xb913
   if (key == K_VOL_DOWN){ _key_definition(0xb915); }
   if (key == K_VOL_UP){ _key_definition(0xb914); }
   if (key == K_BACK){ _key_definition(0xb90a); }
