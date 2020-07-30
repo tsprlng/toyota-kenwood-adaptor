@@ -6,7 +6,7 @@ def key_definition(hex_code, indent='  ')
 	hex_code.scan(/../) do |byte|
 		bytes << byte.hex
 	end
-	bits_str = bytes.map{|b| '%016b' % ((b<<8) + (255-b)) }.join()
+	bits_str = bytes.map{|b| ('%08b' % b).reverse + ('%08b' % (255-b)).reverse }.join()
 	$stderr.puts " ...translated to #{bits_str}"
 	sequence = ''
 	bits_str.chars.each do |b|
