@@ -63,9 +63,9 @@ inline Key held_key() {
   int analog = analogRead(INPUT_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
   if (analog > 115 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
-  if (analog > 35 && analog < 105){ found = found ? N_KEYS : K_VOL_UP; }
+  if (analog > 80 && analog < 105){ found = found ? N_KEYS : K_VOL_UP; }
+  if (analog > 40 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 10 && analog < 35){ found = found ? N_KEYS : K_BACK; }
-  if (analog < 10){ found = found ? N_KEYS : K_FORWARD; }
   return found >= N_KEYS ? K_NONE : found;
 }
 
