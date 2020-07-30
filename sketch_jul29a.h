@@ -13,8 +13,8 @@ typedef enum {
   N_KEYS
 } Key;
 
-inline void on() { digitalWrite(OUTPUT_1, HIGH); }
-inline void off() { digitalWrite(OUTPUT_1, LOW); }
+inline void on() { pinMode(OUTPUT_1, OUTPUT); }
+inline void off() { pinMode(OUTPUT_1, INPUT); }
 
 inline void one() {
   on();
@@ -46,6 +46,7 @@ void setup() {
   // put your setup code here, to run once:
   pinMode(LED_BUILTIN, OUTPUT); digitalWrite(LED_BUILTIN, LOW);
   pinMode(OUTPUT_1, OUTPUT); digitalWrite(OUTPUT_1, LOW);
+  pinMode(OUTPUT_1, INPUT);
   pinMode(INPUT_1, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INPUT_1), _handler_dfa, CHANGE);
 }
