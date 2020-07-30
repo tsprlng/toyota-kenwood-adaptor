@@ -77,6 +77,9 @@ void loop() {
   off();
   _delay_us(4500);
   send_key(key);
+  on();
+  _delay_us(560);
+  off();
   while (held_key() == key) {
     repeat();
   }
