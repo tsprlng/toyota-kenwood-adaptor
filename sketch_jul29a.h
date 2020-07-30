@@ -49,6 +49,7 @@ void setup() {
   pinMode(OUTPUT_1, INPUT);
   pinMode(INPUT_1, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INPUT_1), _handler_dfa, CHANGE);
+  _delay_ms(400);
 }
 
 inline Key held_key() {
@@ -63,8 +64,8 @@ inline void send_key(Key key) {
   if (key == K_VOL_DOWN){ _key_definition(0xb915); }
 }
 
+Key key = K_VOL_DOWN;
 void loop() {
-  Key key = held_key();
   if (key == K_NONE){
     interrupts();
     //sleep();  // TODO: not a thing in arduino world apparently?
@@ -85,4 +86,5 @@ void loop() {
     repeat();
   }
   digitalWrite(LED_BUILTIN, LOW);
+  key = held_key();
 }
