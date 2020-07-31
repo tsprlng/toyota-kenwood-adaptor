@@ -93,7 +93,7 @@ void handleSourceSwitch() {
     _delay_us(9000);
     off();
     _delay_us(4500);
-    send_key(K_PAUSE);
+    send_key(K_SOURCE);
     on();
     _delay_us(560);
     off();
