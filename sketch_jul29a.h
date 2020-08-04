@@ -103,7 +103,7 @@ void handleSourceSwitch() {
     digitalWrite(LED_BUILTIN, LOW);
     digitalWrite(LED_TX, LOW);
     digitalWrite(LED_RX, LOW);
-    for (int toWait=16; toWait; --toWait) {
+    for (int toWait=25; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
       if (k == K_NONE){ continue; }
