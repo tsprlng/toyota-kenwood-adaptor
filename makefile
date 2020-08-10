@@ -3,11 +3,13 @@
 all: yaris.hex
 
 flash: all
-	avrdude -p ATmega32U4 -c avr109 -P /dev/ttyACM0 -U flash:w:yaris.hex -v
+	avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:yaris.hex -B1000 -xrawfreq=0
 
-yaris.hex: yaris.ino
-	arduino-builder -hardware /usr/share/arduino/hardware -tools /usr/bin -fqbn archlinux-arduino:avr:micro -build-path ~/tmp -compile yaris.ino
-	cp ~/tmp/yaris.ino.hex ./yaris.hex
+fuses:
+	avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U lfuse:w:0x6b:m -U hfuse:w:0xfd:m -B1000 -xrawfreq=0
 
-yaris.ino: sketch_jul29a.h preprocess.rb
-	./preprocess.rb < sketch_jul29a.h > yaris.ino
+yaris.hex: yaris.c
+	avr-gcc -o yaris.hex -mmcu=attiny13a -DF_CPU=128000UL -Os yaris.c
+
+yaris.c: sketch_jul29a.h preprocess.rb
+	./preprocess.rb < sketch_jul29a.h > yaris.c
