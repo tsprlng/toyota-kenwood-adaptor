@@ -33,7 +33,7 @@ typedef enum {
 
 static inline uint16_t analogRead(uint8_t channel){
   ADMUX = (1 << REFS0) | channel;     // read channel vs internal voltage ref
-  ADCSRA |= (1 << ADSC);              // Start conversion
+  ADCSRA |= (1 << ADSC) | (1 << ADEN);// Start conversion
   while(!bit_is_set(ADCSRA,ADIF));    // Loop until conversion is complete
   ADCSRA |= (1 << ADIF);              // Clear ADIF by writing a 1 (this sets the value to 0)
 
@@ -95,13 +95,16 @@ static void repeat() {
 
 static inline void setup() {
   WDTCR = (1<<4);  // set WDCE to unset WDE
-  cli();  // no interrupts at any time
   DDRB = (1<<LED);
   PORTB = (1<<INPUT_A) | (1<<INPUT_1);
   ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
 }
 
 static Key held_key() {
+  ledOn();
+  _delay_us(50000);
+  ledOff();
+  _delay_us(50000);
   Key found = K_NONE;
   int analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
@@ -109,6 +112,10 @@ static Key held_key() {
   if (analog > 80 && analog < 105){ found = found ? N_KEYS : K_VOL_UP; }
   if (analog > 40 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 10 && analog < 35){ found = found ? N_KEYS : K_BACK; }
+  ledOn();
+  _delay_us(50000);
+  ledOff();
+  _delay_us(50000);
   return found >= N_KEYS ? K_NONE : found;
     // multiple key presses => something is wrong, so do nothing
 }
@@ -209,29 +216,35 @@ void handleModeKey() {
   //digitalWrite(LED_RX, LOW);
 }
 
-static inline void loop() {
-  Key key = held_key();
-  if (key == K_NONE){
-    return;
-  }
-  if (key == K_MODE){
-    handleModeKey();  // this one is special and multifunctional
-    return;
-  }
-
-  ledOn();
-  agc();
-  send_key(key);
-  on();
-  _delay_us(560);
-  off();
-  while (held_key() == key) {
-    repeat();
-  }
-  ledOff();
-}
-
-void main() {
+int main() {
   setup();
-  while(1){ loop(); }
+  //while(1){
+ //   ledOn();
+   // _delay_us(500000);
+    //ledOff();
+    //_delay_us(500000);
+  //}
+  while(1){
+    Key key = held_key();
+    if (key == K_NONE){
+      continue;
+    }
+    if (key == K_MODE){
+      handleModeKey();  // this one is special and multifunctional
+      continue;
+    }
+
+    ledOn();
+    agc();
+    send_key(key);
+    on();
+    _delay_us(560);
+    off();
+    while (held_key() == key) {
+      repeat();
+    }
+    ledOff();
+  }
+//  ledOn();
+  return 0;
 }
