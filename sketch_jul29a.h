@@ -1,14 +1,23 @@
-#define ONE_TIME 2250
-#define ZERO_TIME 1120
-#define REPEAT_TIME 110000
-#define INPUT_1 7
-#define INPUT_A A2
-#define OUTPUT_1 2
-#define LED_TX 17
-#define LED_RX 30
+#define ONE_TIME 2250UL
+#define ZERO_TIME 1120UL
+#define REPEAT_TIME 110000UL
+#define INPUT_1 1
+#define INPUT_A 2  // ADC1 aka PB2
+#define ADC_A 1  // ADC1 aka PB2
+#define OUTPUT_1 3
+#define LED 4
 
 // fake no-op definition to satisfy arduino IDE, that will be replaced by external macro:
 #define _key_definition(x) _delay_ms(1000)
+
+#include <avr/io.h>
+#include <avr/interrupt.h>  // for cli()
+#include <util/delay.h>
+
+typedef enum {
+  LOW,
+  HIGH
+} DigitalState;
 
 typedef enum {
   K_NONE,
@@ -22,23 +31,45 @@ typedef enum {
   N_KEYS
 } Key;
 
-inline void on() { pinMode(OUTPUT_1, OUTPUT); }
-inline void off() { pinMode(OUTPUT_1, INPUT); }
+static inline uint16_t analogRead(uint8_t channel){
+  ADMUX = (1 << REFS0) | channel;     // read channel vs internal voltage ref
+  ADCSRA |= (1 << ADSC);              // Start conversion
+  while(!bit_is_set(ADCSRA,ADIF));    // Loop until conversion is complete
+  ADCSRA |= (1 << ADIF);              // Clear ADIF by writing a 1 (this sets the value to 0)
 
-inline void one() {
+  return(ADC);
+}
+
+static inline void digitalWrite(uint8_t pin, DigitalState state) {
+  if (state == LOW){
+    DDRB |= (1<<pin);
+  } else {
+    DDRB &= ~(1<<pin);
+  }
+}
+static inline DigitalState digitalRead(uint8_t pin) {
+  if(PINB & (1<<pin)) {
+    return HIGH;
+  }
+  return LOW;
+}
+static inline void on() { digitalWrite(OUTPUT_1, HIGH); }
+static inline void off() { digitalWrite(OUTPUT_1, LOW); }
+
+static inline void one() {
   on();
   _delay_us(560);
   off();
   _delay_us(ONE_TIME - 560);
 }
-inline void zero() {
+static inline void zero() {
   on();
   _delay_us(560);
   off();
   _delay_us(ZERO_TIME - 560);
 }
 
-inline void repeat() {
+static inline void repeat() {
   on();
   _delay_us(9000);
   off();
@@ -49,22 +80,17 @@ inline void repeat() {
   _delay_us(REPEAT_TIME - (9000 + 2250 + 560));
 }
 
-void _handler_dfa() {}
-
-void setup() {
-  // put your setup code here, to run once:
-  pinMode(LED_BUILTIN, OUTPUT); digitalWrite(LED_BUILTIN, LOW);
-  pinMode(OUTPUT_1, OUTPUT); digitalWrite(OUTPUT_1, LOW);
-  pinMode(OUTPUT_1, INPUT);
-  pinMode(INPUT_1, INPUT_PULLUP);
-  pinMode(INPUT_A, INPUT_PULLUP);
-  analogReference(INTERNAL);  // 2.56v
-  attachInterrupt(digitalPinToInterrupt(INPUT_1), _handler_dfa, CHANGE);
+static inline void setup() {
+  WDTCR = (1<<4);  // set WDCE to unset WDE
+  cli();  // no interrupts at any time
+  DDRB = (1<<LED);
+  PORTB = (1<<INPUT_A) | (1<<INPUT_1);
+  ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
 }
 
-inline Key held_key() {
+static inline Key held_key() {
   Key found = K_NONE;
-  int analog = analogRead(INPUT_A);
+  int analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
   if (analog > 115 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
   if (analog > 80 && analog < 105){ found = found ? N_KEYS : K_VOL_UP; }
@@ -74,7 +100,7 @@ inline Key held_key() {
     // multiple key presses => something is wrong, so do nothing
 }
 
-inline void send_key(Key key) {
+static inline void send_key(Key key) {
   if (key == K_MODE){ _key_definition(0xb916); }
   if (key == K_PAUSE){ _key_definition(0xb90e); }
   if (key == K_SOURCE){ _key_definition(0xb913); }
@@ -86,9 +112,9 @@ inline void send_key(Key key) {
 
 void handleSourceSwitch() {
   while (held_key() == K_MODE){
-    digitalWrite(LED_BUILTIN, HIGH);
-    digitalWrite(LED_TX, HIGH);
-    digitalWrite(LED_RX, HIGH);
+    digitalWrite(LED, HIGH);
+    //digitalWrite(LED_TX, HIGH);
+    //digitalWrite(LED_RX, HIGH);
     on();
     _delay_us(9000);
     off();
@@ -100,9 +126,9 @@ void handleSourceSwitch() {
     while (held_key() == K_MODE) {
       repeat();
     }
-    digitalWrite(LED_BUILTIN, LOW);
-    digitalWrite(LED_TX, LOW);
-    digitalWrite(LED_RX, LOW);
+    digitalWrite(LED, LOW);
+    //digitalWrite(LED_TX, LOW);
+    //digitalWrite(LED_RX, LOW);
     for (int toWait=25; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
@@ -114,10 +140,8 @@ void handleSourceSwitch() {
 }
 
 void handleModeKey() {
-  noInterrupts();
-
-  digitalWrite(LED_BUILTIN, HIGH);
-  digitalWrite(LED_RX, HIGH);
+  digitalWrite(LED, HIGH);
+  //digitalWrite(LED_RX, HIGH);
   on();
   _delay_us(9000);
   off();
@@ -147,14 +171,14 @@ void handleModeKey() {
     return;
   }
   else if (held_key() == K_NONE) {  // key was released -- wait for potential double tap
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(LED, LOW);
     for (int toWait=6; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
       if (k == K_NONE){ continue; }
       else if (k == K_MODE) {  // double tap! we must pause
-        digitalWrite(LED_BUILTIN, HIGH);
-        digitalWrite(LED_TX, HIGH);
+        digitalWrite(LED, HIGH);
+        //digitalWrite(LED_TX, HIGH);
         on();
         _delay_us(9000);
         off();
@@ -182,16 +206,14 @@ void handleModeKey() {
     }
   }
 
-  digitalWrite(LED_BUILTIN, LOW);
-  digitalWrite(LED_TX, LOW);
-  digitalWrite(LED_RX, LOW);
+  digitalWrite(LED, LOW);
+  //digitalWrite(LED_TX, LOW);
+  //digitalWrite(LED_RX, LOW);
 }
 
-void loop() {
+static inline void loop() {
   Key key = held_key();
   if (key == K_NONE){
-    interrupts();
-    //sleep();  // TODO: not a thing in arduino world apparently?
     return;
   }
   if (key == K_MODE){
@@ -199,8 +221,7 @@ void loop() {
     return;
   }
 
-  noInterrupts();
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED, HIGH);
   on();
   _delay_us(9000);
   off();
@@ -212,5 +233,10 @@ void loop() {
   while (held_key() == key) {
     repeat();
   }
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED, LOW);
+}
+
+void main() {
+  setup();
+  while(1){ loop(); }
 }
