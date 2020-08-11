@@ -1,4 +1,3 @@
-build.options.json
-yaris.c
+yaris_gen.c
 *.o
 *.hex

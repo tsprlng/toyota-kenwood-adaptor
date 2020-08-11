@@ -2,6 +2,9 @@
 
 all: yaris.hex
 
+clean:
+	rm yaris.hex yaris.o yaris_gen.c
+
 flash: all
 	avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:yaris.hex -B1000 -xrawfreq=0
 
@@ -11,8 +14,8 @@ fuses:
 yaris.hex: yaris.o
 	avr-objcopy -O ihex yaris.o yaris.hex
 
-yaris.o: yaris.c
-	avr-gcc -o yaris.o -mmcu=attiny13a -DF_CPU=128000UL -Os yaris.c
+yaris.o: yaris_gen.c
+	avr-gcc -o yaris.o -mmcu=attiny13a -DF_CPU=128000UL -Os yaris_gen.c
 
-yaris.c: sketch_jul29a.h preprocess.rb
-	./preprocess.rb < sketch_jul29a.h > yaris.c
+yaris_gen.c: yaris.c preprocess.rb
+	./preprocess.rb < yaris.c > yaris_gen.c
