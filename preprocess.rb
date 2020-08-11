@@ -6,17 +6,23 @@ def key_definition(hex_code, indent='  ')
 	hex_code.scan(/../) do |byte|
 		bytes << byte.hex
 	end
+	sequence = ''
+	if bytes.first == 0xb9
+		sequence += 'b9(); '
+		count_zeros+=8
+		count_ones+=8
+		bytes.shift
+	end
 	bits_str = bytes.map{|b| ('%08b' % b).reverse + ('%08b' % (255-b)).reverse }.join()
 	$stderr.puts " ...translated to #{bits_str}"
-	sequence = ''
 	bits_str.chars.each do |b|
 		case b
 		when ?0
 			count_zeros += 1
-			sequence += 'zero();'
+			sequence += 'zero(); '
 		when ?1
 			count_ones += 1
-			sequence += 'one();'
+			sequence += 'one(); '
 		end
 	end
 	delay = "_delay_us(REPEAT_TIME - #{count_zeros}*ZERO_TIME - #{count_ones}*ONE_TIME);"

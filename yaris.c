@@ -40,36 +40,49 @@ static inline uint16_t analogRead(uint8_t channel){
   return(ADC);
 }
 
-static inline void digitalWrite(uint8_t pin, DigitalState state) {
-  if (state == LOW){
-    DDRB |= (1<<pin);
-  } else {
-    DDRB &= ~(1<<pin);
-  }
-}
+//static inline void digitalWrite(uint8_t pin, DigitalState state) {
+  //if (state == LOW){
+    //DDRB |= (1<<pin);
+  //} else {
+    //DDRB &= ~(1<<pin);
+  //}
+//}
 static inline DigitalState digitalRead(uint8_t pin) {
   if(PINB & (1<<pin)) {
     return HIGH;
   }
   return LOW;
 }
-static inline void on() { digitalWrite(OUTPUT_1, HIGH); }
-static inline void off() { digitalWrite(OUTPUT_1, LOW); }
+static inline void on() { DDRB |= (1<<OUTPUT_1); }
+static inline void off() { DDRB &= ~(1<<OUTPUT_1); }
+static inline void ledOn() { PORTB |= (1<<LED); }
+static inline void ledOff() { PORTB &= ~(1<<LED); }
 
-static inline void one() {
+void agc(){
+  on();
+  _delay_us(9000);
+  off();
+  _delay_us(4500);
+}
+
+static void one() {
   on();
   _delay_us(560);
   off();
   _delay_us(ONE_TIME - 560);
 }
-static inline void zero() {
+static void zero() {
   on();
   _delay_us(560);
   off();
   _delay_us(ZERO_TIME - 560);
 }
+static void b9(){
+  one(); zero(); zero(); one(); one(); one(); zero(); one(); zero(); one(); one(); zero(); zero(); zero(); one(); zero();
+}
 
-static inline void repeat() {
+
+static void repeat() {
   on();
   _delay_us(9000);
   off();
@@ -88,7 +101,7 @@ static inline void setup() {
   ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
 }
 
-static inline Key held_key() {
+static Key held_key() {
   Key found = K_NONE;
   int analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
@@ -100,7 +113,7 @@ static inline Key held_key() {
     // multiple key presses => something is wrong, so do nothing
 }
 
-static inline void send_key(Key key) {
+static void send_key(Key key) {
   if (key == K_MODE){ _key_definition(0xb916); }
   if (key == K_PAUSE){ _key_definition(0xb90e); }
   if (key == K_SOURCE){ _key_definition(0xb913); }
@@ -112,13 +125,10 @@ static inline void send_key(Key key) {
 
 void handleSourceSwitch() {
   while (held_key() == K_MODE){
-    digitalWrite(LED, HIGH);
+    ledOn();
     //digitalWrite(LED_TX, HIGH);
     //digitalWrite(LED_RX, HIGH);
-    on();
-    _delay_us(9000);
-    off();
-    _delay_us(4500);
+    agc();
     send_key(K_SOURCE);
     on();
     _delay_us(560);
@@ -126,7 +136,7 @@ void handleSourceSwitch() {
     while (held_key() == K_MODE) {
       repeat();
     }
-    digitalWrite(LED, LOW);
+    ledOff();
     //digitalWrite(LED_TX, LOW);
     //digitalWrite(LED_RX, LOW);
     for (int toWait=25; toWait; --toWait) {
@@ -140,12 +150,9 @@ void handleSourceSwitch() {
 }
 
 void handleModeKey() {
-  digitalWrite(LED, HIGH);
+  ledOn();
   //digitalWrite(LED_RX, HIGH);
-  on();
-  _delay_us(9000);
-  off();
-  _delay_us(4500);
+  agc();
   send_key(K_MODE);  // mute on first press
   on();
   _delay_us(560);
@@ -157,10 +164,7 @@ void handleModeKey() {
     --toHold;
   }
   if (!toHold) {  // key was held! we will switch source now instead
-    on();
-    _delay_us(9000);
-    off();
-    _delay_us(4500);
+    agc();
     send_key(K_MODE);  // undo initial mute
     on();
     _delay_us(560);
@@ -171,28 +175,22 @@ void handleModeKey() {
     return;
   }
   else if (held_key() == K_NONE) {  // key was released -- wait for potential double tap
-    digitalWrite(LED, LOW);
+    ledOff();
     for (int toWait=6; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
       if (k == K_NONE){ continue; }
       else if (k == K_MODE) {  // double tap! we must pause
-        digitalWrite(LED, HIGH);
+        ledOn();
         //digitalWrite(LED_TX, HIGH);
-        on();
-        _delay_us(9000);
-        off();
-        _delay_us(4500);
+        agc();
         send_key(K_MODE);  // undo initial mute
         on();
         _delay_us(560);
         off();
 
         _delay_ms(20);
-        on();
-        _delay_us(9000);
-        off();
-        _delay_us(4500);
+        agc();
         send_key(K_PAUSE);
         on();
         _delay_us(560);
@@ -206,7 +204,7 @@ void handleModeKey() {
     }
   }
 
-  digitalWrite(LED, LOW);
+  ledOff();
   //digitalWrite(LED_TX, LOW);
   //digitalWrite(LED_RX, LOW);
 }
@@ -221,11 +219,8 @@ static inline void loop() {
     return;
   }
 
-  digitalWrite(LED, HIGH);
-  on();
-  _delay_us(9000);
-  off();
-  _delay_us(4500);
+  ledOn();
+  agc();
   send_key(key);
   on();
   _delay_us(560);
@@ -233,7 +228,7 @@ static inline void loop() {
   while (held_key() == key) {
     repeat();
   }
-  digitalWrite(LED, LOW);
+  ledOff();
 }
 
 void main() {
