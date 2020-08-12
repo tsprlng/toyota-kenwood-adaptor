@@ -6,7 +6,7 @@ clean:
 	rm -f yaris.hex yaris.o yaris_gen.c yaris.debug.o yaris.debug.hex
 
 flash: all
-	avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:yaris.hex:i -B1000 -xrawfreq=0 -V
+	docker run --rm -it --device /dev/ttyUSB0 -v ${PWD}:/mount rubberduck/avr avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:/mount/yaris.hex:i -B1000 -xrawfreq=0 -V
 
 fuses:
 	avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U lfuse:w:0x7b:m -U hfuse:w:0xfd:m -B1000 -xrawfreq=0
