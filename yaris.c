@@ -106,7 +106,7 @@ static Key held_key() {
   ledOff();
   _delay_us(50000);
   Key found = K_NONE;
-  int analog = analogRead(ADC_A);
+  uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
   if (analog > 230 && analog < 255){ found = found ? N_KEYS : K_VOL_DOWN; }
   if (analog > 94 && analog < 118){ found = found ? N_KEYS : K_VOL_UP; }
