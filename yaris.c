@@ -108,10 +108,10 @@ static Key held_key() {
   Key found = K_NONE;
   uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
-  if (analog > 230 && analog < 255){ found = found ? N_KEYS : K_VOL_DOWN; }
-  if (analog > 94 && analog < 118){ found = found ? N_KEYS : K_VOL_UP; }
-  if (analog > 53 && analog < 73){ found = found ? N_KEYS : K_FORWARD; }
-  if (analog > 25 && analog < 45){ found = found ? N_KEYS : K_BACK; }
+  if (analog > 200 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
+  if (analog > 80 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
+  if (analog > 50 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
+  if (analog > 20 && analog < 50){ found = found ? N_KEYS : K_BACK; }
   ledOn();
   _delay_us(50000);
   ledOff();
