@@ -83,6 +83,7 @@ static void b9(){
 
 
 static void repeat() {
+  ledOn();
   on();
   _delay_us(9000);
   off();
@@ -90,6 +91,7 @@ static void repeat() {
    on();
   _delay_us(560);
   off();
+  ledOff();
   _delay_us(REPEAT_TIME - (9000 + 2250 + 560));
 }
 
@@ -101,10 +103,6 @@ static inline void setup() {
 }
 
 static Key held_key() {
-  ledOn();
-  _delay_us(50000);
-  ledOff();
-  _delay_us(50000);
   Key found = K_NONE;
   uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
@@ -112,10 +110,6 @@ static Key held_key() {
   if (analog > 80 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
   if (analog > 50 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 20 && analog < 50){ found = found ? N_KEYS : K_BACK; }
-  ledOn();
-  _delay_us(50000);
-  ledOff();
-  _delay_us(50000);
   return found >= N_KEYS ? K_NONE : found;
     // multiple key presses => something is wrong, so do nothing
 }
@@ -133,19 +127,18 @@ static void send_key(Key key) {
 void handleSourceSwitch() {
   while (held_key() == K_MODE){
     ledOn();
-    //digitalWrite(LED_TX, HIGH);
-    //digitalWrite(LED_RX, HIGH);
+    _delay_ms(20);
+    ledOff();
+    _delay_ms(80);
+    ledOn();
     agc();
     send_key(K_SOURCE);
     on();
     _delay_us(560);
     off();
-    while (held_key() == K_MODE) {
-      repeat();
-    }
     ledOff();
-    //digitalWrite(LED_TX, LOW);
-    //digitalWrite(LED_RX, LOW);
+    while (held_key() == K_MODE) {
+    }
     for (int toWait=25; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
@@ -158,12 +151,12 @@ void handleSourceSwitch() {
 
 void handleModeKey() {
   ledOn();
-  //digitalWrite(LED_RX, HIGH);
   agc();
   send_key(K_MODE);  // mute on first press
   on();
   _delay_us(560);
   off();
+  ledOff();
 
   int toHold = 10;
   while (toHold && held_key() == K_MODE) {
@@ -171,11 +164,13 @@ void handleModeKey() {
     --toHold;
   }
   if (!toHold) {  // key was held! we will switch source now instead
+    ledOn();
     agc();
     send_key(K_MODE);  // undo initial mute
     on();
     _delay_us(560);
     off();
+    ledOff();
 
     _delay_ms(20);
     handleSourceSwitch();
@@ -189,41 +184,32 @@ void handleModeKey() {
       if (k == K_NONE){ continue; }
       else if (k == K_MODE) {  // double tap! we must pause
         ledOn();
-        //digitalWrite(LED_TX, HIGH);
         agc();
         send_key(K_MODE);  // undo initial mute
         on();
         _delay_us(560);
         off();
+        ledOff();
 
         _delay_ms(20);
+        ledOn();
         agc();
         send_key(K_PAUSE);
         on();
         _delay_us(560);
         off();
+        ledOff();
         while (held_key() == K_MODE) {
-          repeat();
         }
         break;
       }
       else { break; }
     }
   }
-
-  ledOff();
-  //digitalWrite(LED_TX, LOW);
-  //digitalWrite(LED_RX, LOW);
 }
 
 int main() {
   setup();
-  //while(1){
- //   ledOn();
-   // _delay_us(500000);
-    //ledOff();
-    //_delay_us(500000);
-  //}
   while(1){
     Key key = held_key();
     if (key == K_NONE){
@@ -240,11 +226,10 @@ int main() {
     on();
     _delay_us(560);
     off();
+    ledOff();
     while (held_key() == key) {
       repeat();
     }
-    ledOff();
   }
-//  ledOn();
   return 0;
 }
