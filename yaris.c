@@ -102,7 +102,7 @@ static inline void setup() {
   ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
 }
 
-static Key held_key() {
+static Key held_key_() {
   Key found = K_NONE;
   uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
@@ -112,6 +112,12 @@ static Key held_key() {
   if (analog > 20 && analog < 50){ found = found ? N_KEYS : K_BACK; }
   return found >= N_KEYS ? K_NONE : found;
     // multiple key presses => something is wrong, so do nothing
+}
+
+static Key held_key() {
+  // read twice as a cheap form of analog debouncing
+  Key k = held_key_();
+  return (k == held_key_() ? k : K_NONE);
 }
 
 static void send_key(Key key) {
