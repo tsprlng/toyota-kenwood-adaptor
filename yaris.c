@@ -40,60 +40,10 @@ static inline uint16_t analogRead(uint8_t channel){
   return(ADC);
 }
 
-//static inline void digitalWrite(uint8_t pin, DigitalState state) {
-  //if (state == LOW){
-    //DDRB |= (1<<pin);
-  //} else {
-    //DDRB &= ~(1<<pin);
-  //}
-//}
-static inline DigitalState digitalRead(uint8_t pin) {
-  if(PINB & (1<<pin)) {
-    return HIGH;
-  }
-  return LOW;
-}
 static inline void on() { DDRB |= (1<<OUTPUT_1); }
 static inline void off() { DDRB &= ~(1<<OUTPUT_1); }
 static inline void ledOn() { PORTB |= (1<<LED); }
 static inline void ledOff() { PORTB &= ~(1<<LED); }
-
-void agc(){
-  on();
-  _delay_us(9000);
-  off();
-  _delay_us(4500);
-}
-
-static void one() {
-  on();
-  _delay_us(560);
-  off();
-  _delay_us(ONE_TIME - 560);
-}
-static void zero() {
-  on();
-  _delay_us(560);
-  off();
-  _delay_us(ZERO_TIME - 560);
-}
-static void b9(){
-  one(); zero(); zero(); one(); one(); one(); zero(); one(); zero(); one(); one(); zero(); zero(); zero(); one(); zero();
-}
-
-
-static void repeat() {
-  ledOn();
-  on();
-  _delay_us(9000);
-  off();
-  _delay_us(2250);
-   on();
-  _delay_us(560);
-  off();
-  ledOff();
-  _delay_us(REPEAT_TIME - (9000 + 2250 + 560));
-}
 
 static inline void setup() {
   WDTCR = (1<<4);  // set WDCE to unset WDE
@@ -102,140 +52,52 @@ static inline void setup() {
   ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
 }
 
-static Key held_key_() {
-  Key found = K_NONE;
-  uint16_t analog = analogRead(ADC_A);
-  if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
-  if (analog > 200 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
-  if (analog > 80 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
-  if (analog > 50 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
-  if (analog > 20 && analog < 50){ found = found ? N_KEYS : K_BACK; }
-  return found >= N_KEYS ? K_NONE : found;
-    // multiple key presses => something is wrong, so do nothing
-}
-
-static Key held_key() {
-  // read twice as a cheap form of analog debouncing
-  Key k = held_key_();
-  return (k == held_key_() ? k : K_NONE);
-}
-
-static void send_key(Key key) {
-  if (key == K_MODE){ _key_definition(0xb916); }
-  if (key == K_PAUSE){ _key_definition(0xb90e); }
-  if (key == K_SOURCE){ _key_definition(0xb913); }
-  if (key == K_VOL_DOWN){ _key_definition(0xb915); }
-  if (key == K_VOL_UP){ _key_definition(0xb914); }
-  if (key == K_BACK){ _key_definition(0xb90a); }
-  if (key == K_FORWARD){ _key_definition(0xb90b); }
-}
-
-void handleSourceSwitch() {
-  while (held_key() == K_MODE){
+void show_digit(int n){
+  for(int i=0; i<n; ++i){
+    _delay_ms(180);
     ledOn();
-    _delay_ms(20);
+    _delay_ms(180);
     ledOff();
-    _delay_ms(80);
-    ledOn();
-    agc();
-    send_key(K_SOURCE);
-    on();
-    _delay_us(560);
-    off();
-    ledOff();
-    while (held_key() == K_MODE) {
-    }
-    for (int toWait=25; toWait; --toWait) {
-      _delay_ms(50);
-      Key k = held_key();
-      if (k == K_NONE){ continue; }
-      else if (k == K_MODE) { break; }  // double tap! we must switch again
-      else { return; }
-    }
   }
 }
 
-void handleModeKey() {
-  ledOn();
-  agc();
-  send_key(K_MODE);  // mute on first press
-  on();
-  _delay_us(560);
-  off();
+void show_number(int n){
   ledOff();
 
-  int toHold = 10;
-  while (toHold && held_key() == K_MODE) {
-    _delay_ms(50);
-    --toHold;
+  int digit = n / 100;
+  if(n>=100){
+    _delay_ms(100);
+    _delay_ms(100);
+    show_digit(digit);
+    _delay_ms(100);
   }
-  if (!toHold) {  // key was held! we will switch source now instead
-    ledOn();
-    agc();
-    send_key(K_MODE);  // undo initial mute
-    on();
-    _delay_us(560);
-    off();
-    ledOff();
-
-    _delay_ms(20);
-    handleSourceSwitch();
-    return;
+  digit = (n%100) / 10;
+  if(n>=10){
+    _delay_ms(100);
+    _delay_ms(100);
+    show_digit(digit);
+    _delay_ms(100);
   }
-  else if (held_key() == K_NONE) {  // key was released -- wait for potential double tap
-    ledOff();
-    for (int toWait=6; toWait; --toWait) {
-      _delay_ms(50);
-      Key k = held_key();
-      if (k == K_NONE){ continue; }
-      else if (k == K_MODE) {  // double tap! we must pause
-        ledOn();
-        agc();
-        send_key(K_MODE);  // undo initial mute
-        on();
-        _delay_us(560);
-        off();
-        ledOff();
-
-        _delay_ms(20);
-        ledOn();
-        agc();
-        send_key(K_PAUSE);
-        on();
-        _delay_us(560);
-        off();
-        ledOff();
-        while (held_key() == K_MODE) {
-        }
-        break;
-      }
-      else { break; }
-    }
+  digit = n % 10;
+  if(1){
+    _delay_ms(100);
+    _delay_ms(100);
+    show_digit(digit);
+    _delay_ms(100);
   }
+  ledOff();
+  _delay_ms(1000);
 }
+
 
 int main() {
   setup();
   while(1){
-    Key key = held_key();
-    if (key == K_NONE){
-      continue;
-    }
-    if (key == K_MODE){
-      handleModeKey();  // this one is special and multifunctional
-      continue;
-    }
-
-    ledOn();
-    agc();
-    send_key(key);
-    on();
-    _delay_us(560);
-    off();
-    ledOff();
-    while (held_key() == key) {
-      repeat();
-    }
+    uint16_t analog = analogRead(ADC_A);
+    if (analog > 512) { continue; }
+    _delay_ms(100);
+    analog = analogRead(ADC_A);
+    show_number(analog);
   }
   return 0;
 }
