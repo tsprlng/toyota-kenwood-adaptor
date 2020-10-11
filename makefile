@@ -7,7 +7,7 @@ clean:
 
 flash: all
 	sudo picocom -b 115200 /dev/ttyUSB0 <<< m1
-	docker run --rm -it --device /dev/ttyUSB0 -v ${PWD}:/mount rubberduck/avr avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:/mount/yaris.hex:i -B1000 -xrawfreq=0 -V
+	sudo podman run --rm -it --device /dev/ttyUSB0 -v ${PWD}:/mount rubberduck/avr avrdude -c buspirate -P /dev/ttyUSB0 -p t13 -U flash:w:/mount/yaris.hex:i -B1000 -xrawfreq=0 -V
 	sudo picocom -b 115200 /dev/ttyUSB0 <<< m2
 	sudo picocom -b 115200 /dev/ttyUSB0 <<< W
 
