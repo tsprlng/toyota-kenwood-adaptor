@@ -106,10 +106,10 @@ static Key held_key_() {
   Key found = K_NONE;
   uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
-  if (analog > 200 && analog < 280){ found = found ? N_KEYS : K_VOL_DOWN; }
-  if (analog > 80 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
-  if (analog > 50 && analog < 80){ found = found ? N_KEYS : K_FORWARD; }
-  if (analog > 20 && analog < 50){ found = found ? N_KEYS : K_BACK; }
+  if (analog > 250 && analog < 300){ found = found ? N_KEYS : K_VOL_DOWN; }
+  if (analog > 100 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
+  if (analog > 55 && analog < 90){ found = found ? N_KEYS : K_FORWARD; }
+  if (analog > 25 && analog < 52){ found = found ? N_KEYS : K_BACK; }
   return found >= N_KEYS ? K_NONE : found;
     // multiple key presses => something is wrong, so do nothing
 }
