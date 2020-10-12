@@ -106,7 +106,7 @@ static Key held_key_() {
   Key found = K_NONE;
   uint16_t analog = analogRead(ADC_A);
   if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
-  if (analog > 250 && analog < 300){ found = found ? N_KEYS : K_VOL_DOWN; }
+  if (analog > 160 && analog < 500){ found = found ? N_KEYS : K_VOL_DOWN; }
   if (analog > 100 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
   if (analog > 55 && analog < 90){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 25 && analog < 52){ found = found ? N_KEYS : K_BACK; }
