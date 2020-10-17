@@ -8,7 +8,7 @@ def key_definition(hex_code, indent='  ')
 	end
 	sequence = ''
 	if bytes.first == 0xb9
-		sequence += 'b9(); '
+		sequence += 'send_b9(); '
 		count_zeros+=8
 		count_ones+=8
 		bytes.shift
@@ -19,10 +19,10 @@ def key_definition(hex_code, indent='  ')
 		case b
 		when ?0
 			count_zeros += 1
-			sequence += 'zero(); '
+			sequence += 'send_0(); '
 		when ?1
 			count_ones += 1
-			sequence += 'one(); '
+			sequence += 'send_1(); '
 		end
 	end
 	delay = "_delay_us(REPEAT_TIME - #{count_zeros}*ZERO_TIME - #{count_ones}*ONE_TIME);"

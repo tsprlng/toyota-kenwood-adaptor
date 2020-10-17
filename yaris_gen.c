@@ -31,58 +31,78 @@ typedef enum {
   N_KEYS
 } Key;
 
-static inline uint16_t analogRead(uint8_t channel){
-  ADMUX = (1 << REFS0) | channel;     // read channel vs internal voltage ref
-  ADCSRA |= (1 << ADSC) | (1 << ADEN);// Start conversion
-  while(!bit_is_set(ADCSRA,ADIF));    // Loop until conversion is complete
-  ADCSRA |= (1 << ADIF);              // Clear ADIF by writing a 1 (this sets the value to 0)
+static inline uint16_t analog_read(){
+  ADMUX = (1 << REFS0) | ADC_A;  // Set ADC to read our defined ADC_A channel, comparing with the internal 1.1v reference for higher resolution.
+  ADCSRA |= (1 << ADSC) | (1 << ADEN);  // Start conversion
+  while(!bit_is_set(ADCSRA,ADIF));  // Loop until conversion is complete
+  ADCSRA |= (1 << ADIF);  // Clear ADIF by writing a 1 (this sets the value to 0)
 
   return(ADC);
 }
 
-//static inline void digitalWrite(uint8_t pin, DigitalState state) {
-  //if (state == LOW){
-    //DDRB |= (1<<pin);
-  //} else {
-    //DDRB &= ~(1<<pin);
-  //}
-//}
-static inline DigitalState digitalRead(uint8_t pin) {
-  if(PINB & (1<<pin)) {
-    return HIGH;
-  }
-  return LOW;
+static inline DigitalState digital_read() {
+  return (PINB & (1<<INPUT_1)) ? HIGH : LOW;
 }
 static inline void on() { DDRB |= (1<<OUTPUT_1); }
 static inline void off() { DDRB &= ~(1<<OUTPUT_1); }
 static inline void ledOn() { PORTB |= (1<<LED); }
 static inline void ledOff() { PORTB &= ~(1<<LED); }
 
-void agc(){
+void send_agc(){
   on();
   _delay_us(9000);
   off();
   _delay_us(4500);
 }
 
-static void one() {
+static void send_1() {
   on();
   _delay_us(560);
   off();
   _delay_us(ONE_TIME - 560);
 }
-static void zero() {
+static void send_0() {
   on();
   _delay_us(560);
   off();
   _delay_us(ZERO_TIME - 560);
 }
-static void b9(){
-  one(); zero(); zero(); one(); one(); one(); zero(); one(); zero(); one(); one(); zero(); zero(); zero(); one(); zero();
+static void send_b9(){
+  send_1(); send_0(); send_0(); send_1(); send_1(); send_1(); send_0(); send_1(); send_0(); send_1(); send_1(); send_0(); send_0(); send_0(); send_1(); send_0();
 }
 
+static void send_key(Key key) {
+  if (key == K_MODE){ 
+    send_b9(); send_0(); send_1(); send_1(); send_0(); send_1(); send_0(); send_0(); send_0(); send_1(); send_0(); send_0(); send_1(); send_0(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_PAUSE){ 
+    send_b9(); send_0(); send_1(); send_1(); send_1(); send_0(); send_0(); send_0(); send_0(); send_1(); send_0(); send_0(); send_0(); send_1(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_SOURCE){ 
+    send_b9(); send_1(); send_1(); send_0(); send_0(); send_1(); send_0(); send_0(); send_0(); send_0(); send_0(); send_1(); send_1(); send_0(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_VOL_DOWN){ 
+    send_b9(); send_1(); send_0(); send_1(); send_0(); send_1(); send_0(); send_0(); send_0(); send_0(); send_1(); send_0(); send_1(); send_0(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_VOL_UP){ 
+    send_b9(); send_0(); send_0(); send_1(); send_0(); send_1(); send_0(); send_0(); send_0(); send_1(); send_1(); send_0(); send_1(); send_0(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_BACK){ 
+    send_b9(); send_0(); send_1(); send_0(); send_1(); send_0(); send_0(); send_0(); send_0(); send_1(); send_0(); send_1(); send_0(); send_1(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+  if (key == K_FORWARD){ 
+    send_b9(); send_1(); send_1(); send_0(); send_1(); send_0(); send_0(); send_0(); send_0(); send_0(); send_0(); send_1(); send_0(); send_1(); send_1(); send_1(); send_1(); 
+    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
+; }
+}
 
-static void repeat() {
+static void send_repeat() {
   ledOn();
   on();
   _delay_us(9000);
@@ -96,59 +116,27 @@ static void repeat() {
 }
 
 static inline void setup() {
-  WDTCR = (1<<4);  // set WDCE to unset WDE
-  DDRB = (1<<LED);
-  PORTB = (1<<INPUT_A) | (1<<INPUT_1);
-  ADMUX = (1 << REFS0) | ADC_A;     // read channel vs internal voltage ref
+  WDTCR = (1<<4);  // Set WDCE to unset WDE (disable watchdog timer).
+  DDRB = (1<<LED);  // LED pin is proper output; output pin starts in tri-state and DDRB will be toggled to drag it to ground.
+  PORTB = (1<<INPUT_A) | (1<<INPUT_1);  // Activate pull-ups on both inputs.
 }
 
 static Key held_key_() {
   Key found = K_NONE;
-  uint16_t analog = analogRead(ADC_A);
-  if (digitalRead(INPUT_1) == LOW){ found = found ? N_KEYS : K_MODE; }
+  uint16_t analog = analog_read();
+  if (digital_read() == LOW){ found = found ? N_KEYS : K_MODE; }
   if (analog > 160 && analog < 500){ found = found ? N_KEYS : K_VOL_DOWN; }
   if (analog > 100 && analog < 150){ found = found ? N_KEYS : K_VOL_UP; }
   if (analog > 55 && analog < 90){ found = found ? N_KEYS : K_FORWARD; }
   if (analog > 25 && analog < 52){ found = found ? N_KEYS : K_BACK; }
   return found >= N_KEYS ? K_NONE : found;
-    // multiple key presses => something is wrong, so do nothing
+    // If multiple key presses are detected, something is wrong, so do nothing.
 }
 
 static Key held_key() {
-  // read twice as a cheap form of analog debouncing
+  // Always read twice to check, as a cheap form of analog debouncing.
   Key k = held_key_();
   return (k == held_key_() ? k : K_NONE);
-}
-
-static void send_key(Key key) {
-  if (key == K_MODE){ 
-    b9(); zero(); one(); one(); zero(); one(); zero(); zero(); zero(); one(); zero(); zero(); one(); zero(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_PAUSE){ 
-    b9(); zero(); one(); one(); one(); zero(); zero(); zero(); zero(); one(); zero(); zero(); zero(); one(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_SOURCE){ 
-    b9(); one(); one(); zero(); zero(); one(); zero(); zero(); zero(); zero(); zero(); one(); one(); zero(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_VOL_DOWN){ 
-    b9(); one(); zero(); one(); zero(); one(); zero(); zero(); zero(); zero(); one(); zero(); one(); zero(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_VOL_UP){ 
-    b9(); zero(); zero(); one(); zero(); one(); zero(); zero(); zero(); one(); one(); zero(); one(); zero(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_BACK){ 
-    b9(); zero(); one(); zero(); one(); zero(); zero(); zero(); zero(); one(); zero(); one(); zero(); one(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
-  if (key == K_FORWARD){ 
-    b9(); one(); one(); zero(); one(); zero(); zero(); zero(); zero(); zero(); zero(); one(); zero(); one(); one(); one(); one(); 
-    _delay_us(REPEAT_TIME - 16*ZERO_TIME - 16*ONE_TIME);
-; }
 }
 
 void handleSourceSwitch() {
@@ -158,7 +146,7 @@ void handleSourceSwitch() {
     ledOff();
     _delay_ms(80);
     ledOn();
-    agc();
+    send_agc();
     send_key(K_SOURCE);
     on();
     _delay_us(560);
@@ -166,20 +154,20 @@ void handleSourceSwitch() {
     ledOff();
     while (held_key() == K_MODE) {
     }
-    for (int toWait=25; toWait; --toWait) {
+    for (int toWait=25; toWait; --toWait) {  // Timeout until exiting back to normal main loop.
       _delay_ms(50);
       Key k = held_key();
-      if (k == K_NONE){ continue; }
-      else if (k == K_MODE) { break; }  // double tap! we must switch again
-      else { return; }
+      if (k == K_NONE){ continue; }  // Nothing pressed; keep waiting until timeout.
+      else if (k == K_MODE) { break; }  // MODE pressed again, so go round to switch source a second time.
+      else { return; }  // A different key was pressed, so exit back to the normal main loop immediately.
     }
   }
 }
 
 void handleModeKey() {
   ledOn();
-  agc();
-  send_key(K_MODE);  // mute on first press
+  send_agc();
+  send_key(K_MODE);  // Mute on first press.
   on();
   _delay_us(560);
   off();
@@ -190,29 +178,29 @@ void handleModeKey() {
     _delay_ms(50);
     --toHold;
   }
-  if (!toHold) {  // key was held! we will switch source now instead
+  if (!toHold) {  // Key was held! We will switch source now instead.
     ledOn();
-    agc();
-    send_key(K_MODE);  // undo initial mute
+    send_agc();
+    send_key(K_MODE);  // Undo initial mute first.
     on();
     _delay_us(560);
     off();
     ledOff();
 
     _delay_ms(20);
-    handleSourceSwitch();
+    handleSourceSwitch();  // Enter second loop where further single presses of MODE temporarily mean "switch source".
     return;
   }
-  else if (held_key() == K_NONE) {  // key was released -- wait for potential double tap
+  else if (held_key() == K_NONE) {  // Key was released -- wait for potential double tap...
     ledOff();
     for (int toWait=6; toWait; --toWait) {
       _delay_ms(50);
       Key k = held_key();
-      if (k == K_NONE){ continue; }
-      else if (k == K_MODE) {  // double tap! we must pause
+      if (k == K_NONE){ continue; }  // Nothing pressed; keep waiting until timeout.
+      else if (k == K_MODE) {  // Double tap! We must send play/pause!
         ledOn();
-        agc();
-        send_key(K_MODE);  // undo initial mute
+        send_agc();
+        send_key(K_MODE);  // Undo initial mute first.
         on();
         _delay_us(560);
         off();
@@ -220,17 +208,16 @@ void handleModeKey() {
 
         _delay_ms(20);
         ledOn();
-        agc();
+        send_agc();
         send_key(K_PAUSE);
         on();
         _delay_us(560);
         off();
         ledOff();
-        while (held_key() == K_MODE) {
-        }
+        while (held_key() == K_MODE) {}  // Wait for key to be released before exiting.
         break;
       }
-      else { break; }
+      else { break; }  // A different key was pressed, so exit back to the normal main loop immediately.
     }
   }
 }
@@ -240,22 +227,23 @@ int main() {
   while(1){
     Key key = held_key();
     if (key == K_NONE){
-      continue;
+      continue;  // Just keep waiting, if nothing was pressed.
     }
     if (key == K_MODE){
-      handleModeKey();  // this one is special and multifunctional
+      handleModeKey();  // This key is special and multifunctional, so has its own handler function.
       continue;
     }
 
+    // For all other keys, just behave like a normal remote, sending the code and repeating while held.
     ledOn();
-    agc();
+    send_agc();
     send_key(key);
     on();
     _delay_us(560);
     off();
     ledOff();
     while (held_key() == key) {
-      repeat();
+      send_repeat();
     }
   }
   return 0;
