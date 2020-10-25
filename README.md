@@ -53,6 +53,7 @@ Useful sources
 - [My previous Raspberry Pi "NAD Link" project (also NEC protocol)](https://github.com/tsprlng/nad-link) (~2015)
 - [Matti Kantola's equivalent project for Renault Megane](http://www.angelfire.com/nd/maza/kenwood.html) (2000)
 
+Note that in this case, any mentions of 38kHz carriers in the remote protocol are not relevant. The remote wire from the radio is effectively expecting what would be the inverted remote signal after detection and filtering -- so just needs pulling to ground where the carrier would be on, or leaving to be pulled up to 3v3 where it would be off.
 
 Here, for archival purposes, are all the Kenwood remote codes from Matti Kantola's page, which I could not find elsewhere!
 
