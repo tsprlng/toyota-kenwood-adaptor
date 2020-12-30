@@ -35,7 +35,7 @@ Yes, it's a resistor divider. Cheap, robust, simple, and with trustworthy and ad
 
 A possible enhancement could be a decoupling capacitor across the microcontroller, and it might also be sane to use a ~5v5 Zener diode to protect it against surprise spike incidents. However it seems totally stable as it is, and I am enjoying the experiment.
 
-The reason it's possible to get away this is that the ATtiny, clocked at 128kHz and in the voltage range it's operating at, draws significantly less than one milliamp! Obviously this is negligible compared to the power consumption of the radio itself, so I can't really be bothered with the extra complexity of using more components to try and handle that tiny current more efficiently.
+The reason it's possible to get away with this is that the ATtiny, clocked at 128kHz and in the voltage range it's operating at, draws significantly less than one milliamp! Obviously this is negligible compared to the power consumption of the radio itself, so I can't really be bothered with the extra complexity of using more components to try and handle that tiny current more efficiently.
 
 Testing is vital, so of course the controller was tested extensively while powered via the same resistors from a supply between 10 and 15 volts (the "very low battery" up to "charging" range). The resistors keep it well within its voltage specifications across the whole range, and it's stable down to about 9.8v (at which point it would be long past time to charge the battery anyway) where the ATtiny's brown-out detector intermittently causes it to reset (good).
 
