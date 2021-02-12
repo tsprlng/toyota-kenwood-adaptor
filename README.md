@@ -37,7 +37,7 @@ A possible enhancement could be a decoupling capacitor across the microcontrolle
 
 The reason it's possible to get away with this is that the ATtiny, clocked at 128kHz and in the voltage range it's operating at, draws significantly less than one milliamp! Obviously this is negligible compared to the power consumption of the radio itself, so I can't really be bothered with the extra complexity of using more components to try and handle that tiny current more efficiently.
 
-Testing is vital, so of course the controller was tested extensively while powered via the same resistors from a supply between 10 and 15 volts (the "very low battery" up to "charging" range). The resistors keep it well within its voltage specifications across the whole range, and it's stable down to about 9.8v (at which point it would be long past time to charge the battery anyway) where the ATtiny's brown-out detector intermittently causes it to reset (good).
+Testing is vital, so of course the controller was tested extensively while powered via the same resistors from a supply between 10 and 15 volts (an insanely pessimistic exaggeration of the "very low battery" up to "charging" range). The resistors keep it well within its voltage specifications across the whole range, and it's stable down to about 9.8v (at which point it would be long past time to charge the battery anyway) where the ATtiny's brown-out detector intermittently causes it to reset (good).
 
 I tapped into the radio's power wires with Wago 222 blocks because I had dozens of them available at the time. They are rated for much higher continuous current than the capacity of the radio circuit, are compatible with the right kinds of flex cable, and seem to work very neatly and well.
 
