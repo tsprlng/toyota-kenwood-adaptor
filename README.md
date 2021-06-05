@@ -69,7 +69,7 @@ Without these, it would have been an impossible nightmare.
 | track+     | 0xb90b |
 | rew        | 0xb90c |
 | ff         | 0xb90d |
-| dnpp (?)   | 0xb95e |
+| dnpp*      | 0xb95e |
 | play/pause | 0xb90e |
 | ---        |        |
 | volume+    | 0xb914 |
@@ -87,3 +87,5 @@ Without these, it would have been an impossible nightmare.
 | 7          | 0xb907 |
 | 8          | 0xb908 |
 | 9          | 0xb909 |
+
+_*About DNPP: Assuming your stereo supports this (likely older ones), if you have already set the name of a disc that you want to listen to located in your multiple cd disc changer, you can look for it by name and start playing it. Press the DNPP button on the remote control."DNP PLAY" will appear in the display, and the disc name preset play (DNPP) mode is entered. Names of the different discs will be shown and you can select one by pressing OK. Press DNPP again to exit DNPP mode._
